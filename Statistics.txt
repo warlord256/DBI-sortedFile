@@ -1,0 +1,10 @@
+nation 25
+n_nationkey 25
+
+customer 150000
+c_nationkey 25
+c_custkey 150000
+
+orders 1500000
+o_custkey 150000
+

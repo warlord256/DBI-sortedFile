@@ -1,8 +1,118 @@
 #include "gtest/gtest.h"
-#include "DBFile.h"
-#include "BigQ.h"
-#include "RelOp.h"
-#include "test.h"
+// #include "DBFile.h"
+// #include "BigQ.h"
+// #include "RelOp.h"
+// #include "test.h"
+#include "Statistics.h"
+extern "C" struct YY_BUFFER_STATE *yy_scan_string(const char*);
+extern "C" int yyparse(void);
+extern struct AndList *final;
+
+TEST(STATISTICS_TEST_SUIT, STATISTICS_ESTIMATE){
+    Statistics s;
+    char *relName[] = {"supplier","partsupp"};
+	
+	s.AddRel(relName[0],10000);
+	s.AddAtt(relName[0], "s_suppkey",10000);
+
+	s.AddRel(relName[1],800000);
+	s.AddAtt(relName[1], "ps_suppkey", 10000);	
+
+	char *cnf = "(s_suppkey = ps_unknownattr)";
+
+	yy_scan_string(cnf);
+	yyparse();
+    EXPECT_EXIT(s.Estimate(final, relName, 2), ::testing::KilledBySignal(6), "Assertion `1==2' failed");
+
+    char *valid_cnf = "(s_suppkey = ps_suppkey)";
+	yy_scan_string(valid_cnf);
+	yyparse();
+    EXPECT_EQ(800000, s.Estimate(final, relName, 2));    
+}
+
+TEST(STATISTICS_TEST_SUIT, STATISTICS_APPLY){
+    Statistics s;
+    char *relName[] = {"supplier","partsupp"};
+	
+	s.AddRel(relName[0],10000);
+	s.AddAtt(relName[0], "s_suppkey",10000);
+
+	s.AddRel(relName[1],800000);
+	s.AddAtt(relName[1], "ps_suppkey", 10000);	
+
+	char *cnf = "(s_suppkey = ps_unknownattr)";
+
+	yy_scan_string(cnf);
+	yyparse();
+    EXPECT_EXIT(s.Apply(final, relName, 2), ::testing::KilledBySignal(6), "Assertion `1==2' failed");
+
+    char *valid_cnf = "(s_suppkey = ps_suppkey)";
+	yy_scan_string(valid_cnf);
+	yyparse();
+    EXPECT_NO_FATAL_FAILURE(s.Apply(final, relName, 2));   
+}
+
+TEST(STATISTICS_TEST_SUIT, STATISTICS_VALID_JOIN){
+    Statistics s;
+    char *relName[] = {"a","b","c"};
+	
+	s.AddRel(relName[0],10000);
+	s.AddAtt(relName[0], "a_attr",10000);
+
+	s.AddRel(relName[1],10000);
+	s.AddAtt(relName[1], "b_attr", 10000);	
+
+	s.AddRel(relName[2],10000);
+	s.AddAtt(relName[2], "c_attr", 10000);	
+
+	char *cnf = "(a_attr = b_attr)";
+
+	yy_scan_string(cnf);
+	yyparse();
+    s.Apply(final, relName, 2);
+
+    char *cnf_2 = "(b_attr = c_attr)";
+
+	yy_scan_string(cnf_2);
+	yyparse();
+
+    EXPECT_EXIT(s.Estimate(final, &relName[1], 2), ::testing::KilledBySignal(6), "Assertion `1==2' failed");
+    EXPECT_EQ(10000, s.Estimate(final, relName, 3));
+}
+
+TEST(STATISTICS_TEST_SUIT, STATISTICS_NORMAL_FLOW){
+    Statistics s;
+        char *relName[] = {"supplier","partsupp"};
+
+	
+	s.AddRel(relName[0],10000);
+	s.AddAtt(relName[0], "s_suppkey",10000);
+
+	s.AddRel(relName[1],800000);
+	s.AddAtt(relName[1], "ps_suppkey", 10000);	
+
+	char *cnf = "(s_suppkey = ps_suppkey)";
+
+	yy_scan_string(cnf);
+	yyparse();
+	EXPECT_EQ(800000, s.Estimate(final, relName, 2));
+    EXPECT_NO_FATAL_FAILURE(s.Apply(final, relName, 2));
+	
+    cnf = "(s_suppkey>1000)";	
+	yy_scan_string(cnf);
+	yyparse();
+    EXPECT_NEAR(266666, s.Estimate(final, relName, 2), 1);
+}
+
+
+/* 
+********
+Uncomment the tests if it is required to run, 
+commented because for the current project it is not required to create bin files, 
+for the test cases to run a valid tpch directory needs to be mentioned.
+But Project 4.1 does not require it hence commented the code.
+*********
+
 
 TEST(DBFILE_TEST_SUIT, DBFILE_CREATE_TEST){
 
@@ -239,3 +349,4 @@ TEST(RELOP_TEST_SUIT, GROUPBY_TEST) {
     ASSERT_EQ(5, count);
     G.WaitUntilDone();
 }
+*/
