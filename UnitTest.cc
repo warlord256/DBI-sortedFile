@@ -2,10 +2,11 @@
 // #include "DBFile.h"
 // #include "BigQ.h"
 // #include "RelOp.h"
-// #include "test.h"
+#include "test.h"
 // #include "Statistics.h"
 // #include "QueryPlan.h"
 #include "QueryOptimizer.h"
+#include "Execute.h"
 
 extern struct FuncOperator *finalFunction; // the aggregate function (NULL if no agg)
 extern struct TableList *tables; // the list of tables and aliases in the query
@@ -18,7 +19,39 @@ extern int distinctFunc;  // 1 if there is a DISTINCT in an aggregate query
 extern "C" struct YY_BUFFER_STATE *yy_scan_string(const char*);
 extern "C" int yyparse(void);
 
+TEST(FULL_CHECK, EXECUTE_CHECK)
+{
+    setup();
+    EXPECT_DEATH(ExecuteQuery(), "");
+    EXPECT_DEATH(ExecuteSelectQuery(), "");
+    EXPECT_DEATH(ExecuteDropQuery(), "");
+    EXPECT_DEATH(ExecuteInsertQuery(), "");
+    EXPECT_DEATH(ExecuteCreateQuery(), "");
+    yy_scan_string("SET OUTPUT 'nonexistnt.txt';");
+    yyparse();
+    EXPECT_NO_FATAL_FAILURE(ExecuteQuery());
+}
+//drop non exit tabe
+TEST(FULL_CHECKS, FULL_CHECKS)
+{
+    setup();
+    yy_scan_string("DROP TABLE nonExistentTable;");    
+    yyparse();
+    EXPECT_DEATH(ExecuteDropQuery(), "");
+    yy_scan_string("CREATE TABLE mytable (att1 INTEGER, att2 DOUBLE, att3 STRING) AS HEAP;");    
+    yyparse();
+    EXPECT_NO_FATAL_FAILURE(ExecuteCreateQuery());
+    yy_scan_string("INSERT ‘fileNotAvailable’ INTO mytable;");    
+    yyparse();
+    EXPECT_DEATH(ExecuteInsertQuery(), "");
+    yy_scan_string("DROP TABLE mytable;");    
+    yyparse();
+    EXPECT_NO_FATAL_FAILURE(ExecuteDropQuery());
+
+}
+
 TEST(OPTIMIZER_TEST, OPTIMIZE){
+    setup();
     QueryOptimizer qo;
     QueryPlan qp;
     EXPECT_DEATH(qo.Optimize(qp), "");
@@ -46,6 +79,7 @@ TEST(QUERY_PLAN_TEST, ASSIGN_PIPES){
 }
 
 TEST(OPTIMIZER_TEST, COMPLETE){
+    setup();
     QueryOptimizer qo;
     QueryPlan qp;
     EXPECT_DEATH(qo.Optimize(qp), "");

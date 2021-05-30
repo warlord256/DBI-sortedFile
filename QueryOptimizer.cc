@@ -5,8 +5,6 @@
 #include <set>
 #include "Function.h"
 
-char *catalog_path = "catalog";
-
 #define GetInvlolvedTables(involvedTables, andList)             \
     OrList *temp = andList->left;                               \
     while(temp!=NULL) {                                         \
@@ -25,6 +23,8 @@ extern struct NameList *groupingAtts; // grouping atts (NULL if no grouping)
 extern struct NameList *attsToSelect; // the set of attributes in the SELECT (NULL if no such atts)
 extern int distinctAtts; // 1 if there is a DISTINCT in a non-aggregate query 
 extern int distinctFunc;  // 1 if there is a DISTINCT in an aggregate query
+
+extern char* catalog_path;
 
 void QueryOptimizer :: PerformAggregateFunction(QueryPlan *plan) {
     // Check if there is some aggrgate function.
@@ -105,8 +105,8 @@ void QueryOptimizer :: PerformDuplicateRemoval(QueryPlan *plan) {
     if(distinctAtts) {
         Node *n = new Node(DISTINCT);
         n->leftChild = root;
-        n->outputSchema = root->outputSchema;
-        
+        n->schema = root->outputSchema;
+        n->outputSchema = n->schema;
         // Update root
         plan->root = n;
     }
@@ -377,6 +377,7 @@ void QueryOptimizer::PerformSelectOperations(Statistics &stats, vector<AndList*>
             n->literal = new Record();
             n->cnf->GrowFromParseTree(selects[i], n->outputSchema, *n->literal);
             n->andList = selects[i];
+            n->relName = aliasToRel[j];
             // n->defn = "Peforming select of relation "+j;
             (*selectOperations_t)[j] = n;
             
@@ -413,6 +414,7 @@ void QueryOptimizer::PerformSelectOperations(Statistics &stats, vector<AndList*>
             // Get the schema from catalog and fix the schema with the alias.
             Schema sch(catalog_path, (char *)aliasToRel[i.first].c_str());
             n->outputSchema = new Schema(&sch, i.first.c_str());
+            n->relName = aliasToRel[i.first];
 
             // n->defn = "Peforming select of relation "+i.first;            
             (*selectOperations_t)[i.first] = n;

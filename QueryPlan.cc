@@ -11,13 +11,21 @@ using namespace std;
         cout << "\tAtt: "<< string(attrs[i].name) << " : "<< type_s[attrs[i].myType]<<endl;\
     }
 
+extern char* dbfile_dir;
+
 QueryPlan :: QueryPlan() {
     root = NULL;
+    pipes = NULL;
 }
 
 QueryPlan :: ~QueryPlan () {
     // Destroy
     delete root;
+    if(pipes!=NULL)
+        for(int i=0;i<pipeCount;i++) {
+            delete pipes[i];
+        }
+    delete pipes;
 }
 
 Node :: Node (Operation type) {
@@ -32,6 +40,8 @@ Node :: Node (Operation type) {
     this->literal = NULL;
     this->keepMe = NULL;
     this->andList = NULL;
+    this->file = NULL;
+    this->relOp = NULL;
 };
 
 Node :: ~Node() {
@@ -43,7 +53,9 @@ Node :: ~Node() {
     delete function;
     delete schema;
     delete literal;
-    delete keepMe;
+    delete[] keepMe;
+    delete file;
+    delete relOp;
 }
 
 void QueryPlan :: Print() {
@@ -83,7 +95,9 @@ void PrintAndList(AndList* andList) {
         cur = cur->rightAnd;
     }
 }
+
 string type_s[3] = {"Int", "Double", "String"};
+
 void Node :: Print() {
     // Inorder printing.
     // Print left.
@@ -174,4 +188,84 @@ void QueryPlan :: AssignPipes(Node* node) {
 
     // Assign output pipe.
     node->outPipe = pipeCount++;
+}
+
+void QueryPlan::Execute() {
+    pipes = new Pipe*[pipeCount];
+    for(int i=0;i<pipeCount;i++) {
+        pipes[i] = new Pipe(PIPE_BUFFER_SIZE);
+    }
+    Execute(root);
+}
+
+void QueryPlan::Execute(Node *node) {
+    if(node == NULL) {
+        return;
+    }
+    node->Execute(pipes);
+    Execute(node->leftChild);
+    Execute(node->rightChild);
+}
+
+string GetRelationFilePath(string relation) {
+    return string(dbfile_dir)+relation+".bin";
+}
+
+void Node::Execute(Pipe **pipes) {
+    switch (type) {
+    case SELECT_FILE:
+        file = new DBFile();
+        file->Open(GetRelationFilePath(relName).c_str());
+        relOp = new SelectFile();
+        ((SelectFile*)relOp)->Run(*file, *pipes[outPipe], *cnf, *literal );
+        break;
+    case SELECT_PIPE:
+        relOp = new SelectPipe();
+        ((SelectPipe*)relOp)->Run(*pipes[lPipe], *pipes[outPipe], *cnf, *literal);
+        break;
+    case JOIN:
+        relOp = new Join();
+        ((Join*)relOp)->Run(*pipes[lPipe], *pipes[rPipe], *pipes[outPipe], *cnf, *literal);
+        break;
+    case DISTINCT:
+        relOp = new DuplicateRemoval();
+        ((DuplicateRemoval*)relOp)->Run(*pipes[lPipe], *pipes[outPipe], *schema);
+        break;
+    case GROUPBY:
+        relOp = new GroupBy();
+        ((GroupBy*)relOp)->Run(*pipes[lPipe], *pipes[outPipe], *order, *function);
+        break;
+    case SUM:
+        relOp = new Sum();
+        ((Sum*)relOp)->Run(*pipes[lPipe], *pipes[outPipe], *function);
+        break;
+    case PROJECT:
+        relOp = new Project();
+        ((Project*)relOp)->Run(*pipes[lPipe], *pipes[outPipe], keepMe, numAttsInput, numAttsOutput);
+        break;
+    default:
+        cout << "Unkown type of Node found!\n";
+        break;
+    }
+}
+
+void QueryPlan::Cleanup(Node *n) {
+    if(n == NULL) {
+        return;
+    }
+    n->relOp->WaitUntilDone();
+    n->CleanUp();
+    Cleanup(n->leftChild);
+    Cleanup(n->rightChild);
+}
+
+void Node::CleanUp() {
+    // Take care of any cleanups.
+    if(file != NULL) {
+        file->Close();
+    }
+}
+
+void QueryPlan :: GetOutputPipe(Pipe *out) {
+    out = pipes[root->outPipe];
 }

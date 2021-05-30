@@ -1,4 +1,4 @@
-8
+9
 0 supplier 
 1 partsupp 
 3 orders 
@@ -7,6 +7,12 @@
 5 nation 
 6 part 
 7 region 
+8 mytable
+
+8 2
+att1 2
+att2 2
+att3 2
 
 7 5
 r_comment 5
@@ -147,3 +153,6 @@ n_comment 5
 p_partkey 6
 p_size 6
 p_name 6
+att1 8
+att2 8
+att3 8

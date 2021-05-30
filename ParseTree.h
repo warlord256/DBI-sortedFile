@@ -11,6 +11,12 @@
 #define GREATER_THAN 6
 #define EQUALS 7
 
+#define CREATE_QUERY 0
+#define SELECT_QUERY 1
+#define INSERT_QUERY 2
+#define DROP_QUERY 3
+#define SET_QUERY 4
+
 // used in computational (funcional) expressions
 struct FuncOperand {
 
@@ -95,6 +101,12 @@ struct AndList {
         // note that this can be NULL if the right is a disjunction
         struct AndList *rightAnd;
 
+};
+
+struct AttributeList {
+        char *name;
+        int type;
+        struct AttributeList *next;
 };
 
 #endif

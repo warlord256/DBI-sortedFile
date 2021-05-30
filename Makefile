@@ -14,7 +14,13 @@ gtest.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o HeapDBFile.o
 	$(CC) -o gtest.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o HeapDBFile.o SortedDBFile.o DBFile.o Pipe.o BigQ.o RelOp.o Function.o Statistics.o QueryPlan.o QueryOptimizer.o y.tab.o lex.yy.o UnitTest.o RunTests.o -lfl -lpthread -lgtest
 
 main.o : main.cc
-	$(CC) -g -c main.cc
+	$(CC) -g -c main.cc 
+
+UnitTest.o : UnitTest.cc
+	$(CC) -g -c UnitTest.cc
+
+RunTests.o : RunTests.cc
+	$(CC) -g -c RunTests.cc
 
 Schema.o : Schema.cc
 	$(CC) -g -c Schema.cc
@@ -25,6 +31,9 @@ Comparison.o: Comparison.cc
 	
 ComparisonEngine.o: ComparisonEngine.cc
 	$(CC) -g -c ComparisonEngine.cc
+
+Record.o: Record.cc
+	$(CC) -g -c Record.cc
 	
 DBFile.o: DBFile.cc
 	$(CC) -g -c DBFile.cc
@@ -40,6 +49,9 @@ HeapDBFile.o: HeapDBFile.cc
 
 SortedDBFile.o: SortedDBFile.cc
 	$(CC) -g -c SortedDBFile.cc
+
+File.o: File.cc
+	$(CC) -g -c File.cc
 
 RelOp.o: RelOp.cc
 	$(CC) -g -c RelOp.cc

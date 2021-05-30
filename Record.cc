@@ -586,8 +586,13 @@ size_t Record :: Size() {
 
 // Changes the left record to hold only the attributes in the OrderMaker.
 void Record :: ComposeGroupedRecord (Record *left, Record *right, OrderMaker *orderLeft) {
+	
 	int size = orderLeft->numAtts+1;
 	int atts[size];
-	left->Project(atts, orderLeft->numAtts, left->NumberOfAtts());
-	MergeRecords(left, right);
+	atts[0] = 0;
+	for(int i=0;i<orderLeft->numAtts;i++) {
+		atts[i+1] = orderLeft->whichAtts[i];
+	}
+
+	MergeRecords(left, right, 1, orderLeft->numAtts, atts, size, 1);
 }

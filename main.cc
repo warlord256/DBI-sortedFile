@@ -1,7 +1,7 @@
 
 #include <iostream>
-#include "ParseTree.h"
-#include "QueryOptimizer.h"
+#include "test.h"
+#include "Execute.h"
 
 using namespace std;
 
@@ -10,16 +10,14 @@ extern "C" {
 }
 
 int main () {
-
-	if(yyparse()) {
-		return -1;
+	setup();
+	cout<< "Enter the query to execute: \n";
+	while(!yyparse()) {
+		ExecuteQuery();
+		cout<<"Query successful!\n";
+		cout<< "Enter the query to execute: \n";
 	}
-	QueryOptimizer opt;
-	QueryPlan plan;
-	opt.Optimize(plan);	
-	plan.AssignPipes(plan.root);
-	plan.Print();
-	return 0;
+	return -1;
 }
 
 

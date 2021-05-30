@@ -35,6 +35,18 @@ void yyerror(char*s);
 
 %%
 
+"CREATE"    return(CREATE);
+"TABLE"     return(TABLE);
+"HEAP"      return(HEAP);
+"SORTED"    return(SORTED);
+"INSERT"    return(INSERT);
+"INTO"      return(INTO);
+"DROP"      return (DROP);
+"SET"       return(SET);
+"OUTPUT"    return(OUTPUT);
+"STDOUT"    return(STDOUT);
+"NONE"      return(NONE);
+
 "SELECT"		return(SELECT);
 
 "FROM"			return(FROM);
@@ -55,6 +67,10 @@ void yyerror(char*s);
 
 "AS"			return(AS);
 
+"DOUBLE"      return(DBL);
+"STRING"      return(STR);
+"INTEGER"     return(INTEGER); 
+
 "("			return('(');
 
 "<"                     return('<');
@@ -74,6 +90,8 @@ void yyerror(char*s);
 "*"    	        	return('*');
 
 ","    	        	return(',');
+
+";"               return 0; // Logical EOF
 
 -?[0-9]+ 	       {yylval.actualChars = strdup(yytext);
   			return(Int); 

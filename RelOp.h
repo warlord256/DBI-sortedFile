@@ -5,6 +5,7 @@
 #include "DBFile.h"
 #include "Record.h"
 #include "Function.h"
+#include <vector>
 
 struct operationParams;
 

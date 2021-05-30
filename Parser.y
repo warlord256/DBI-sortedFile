@@ -20,6 +20,13 @@
 	int distinctAtts; // 1 if there is a DISTINCT in a non-aggregate query 
 	int distinctFunc;  // 1 if there is a DISTINCT in an aggregate query
 
+	int queryType; // Type of query like SELECT, INSERT etc.
+	char* tableToInsert; // Table name to insert.
+	struct AttributeList *attsToCreate; // Attributes to create.
+	int fileType; // File type. 
+	char* filename; //File name if needed.
+	bool shouldExecute; // Specifies if the query plan should be executed.
+	char* outputFilename; // File to which the output is to be written.
 %}
 
 // this stores all of the types returned by production rules
@@ -32,14 +39,20 @@
 	struct OrList *myOrList;
 	struct AndList *myAndList;
 	struct NameList *myNames;
+	struct AttributeList *myAttList;
 	char *actualChars;
 	char whichOne;
+	int myType;
 }
 
 %token <actualChars> Name
 %token <actualChars> Float
 %token <actualChars> Int
 %token <actualChars> String
+%token CREATE
+%token TABLE
+%token HEAP
+%token SORTED
 %token SELECT
 %token GROUP 
 %token DISTINCT
@@ -50,6 +63,16 @@
 %token AS
 %token AND
 %token OR
+%token DBL
+%token INTEGER
+%token STR
+%token INSERT
+%token INTO
+%token DROP
+%token SET
+%token OUTPUT
+%token STDOUT
+%token NONE
 
 %type <myOrList> OrList
 %type <myAndList> AndList
@@ -61,6 +84,8 @@
 %type <myTables> Tables
 %type <myBoolOperand> Literal
 %type <myNames> Atts
+%type <myAttList> AttDefs
+%type <myType> Type
 
 %start SQL
 
@@ -74,8 +99,51 @@
 
 %%
 
-SQL: SELECT WhatIWant FROM Tables WHERE AndList
+SQL: CREATE TABLE Name '(' AttDefs ')' AS HEAP
 {
+	queryType = CREATE_QUERY;
+	tableToInsert = $3;
+	attsToCreate = $5;
+	fileType = 0;
+}
+
+| INSERT String INTO Name
+{
+	queryType = INSERT_QUERY;
+	filename = $2;
+	tableToInsert = $4;
+}
+
+| DROP TABLE Name
+{
+	queryType = DROP_QUERY;
+	tableToInsert = $3;
+}
+
+| SET OUTPUT STDOUT
+{
+	queryType = SET_QUERY;
+	shouldExecute = true;
+	outputFilename = NULL;
+}
+
+| SET OUTPUT String
+{
+	queryType = SET_QUERY;
+	shouldExecute = true;
+	outputFilename = $3;
+}
+
+| SET OUTPUT NONE
+{
+	queryType = SET_QUERY;
+	shouldExecute = false;
+	outputFilename = NULL;
+}
+
+| SELECT WhatIWant FROM Tables WHERE AndList
+{
+	queryType = SELECT_QUERY;
 	tables = $4;
 	boolean = $6;	
 	groupingAtts = NULL;
@@ -83,10 +151,42 @@ SQL: SELECT WhatIWant FROM Tables WHERE AndList
 
 | SELECT WhatIWant FROM Tables WHERE AndList GROUP BY Atts
 {
+	queryType = SELECT_QUERY;
 	tables = $4;
 	boolean = $6;	
 	groupingAtts = $9;
 };
+
+AttDefs: Name Type
+{
+	$$ = (struct AttributeList *) malloc (sizeof (struct AttributeList));
+	$$->name = $1;
+	$$->type = $2;
+	$$->next = NULL;
+}
+
+| Name Type ',' AttDefs
+{
+	$$ = (struct AttributeList *) malloc (sizeof (struct AttributeList));
+	$$->name = $1;
+	$$->type = $2;
+	$$->next = $4;
+};
+
+Type: INTEGER
+{
+	$$ = INT;
+} 
+
+| DBL
+{
+	$$ = DOUBLE;
+}
+
+| STR
+{
+	$$ = STRING;
+}
 
 WhatIWant: Function ',' Atts 
 {
