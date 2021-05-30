@@ -7,11 +7,12 @@
 
 #define PAGE_SIZE 131072
 
+#define PIPE_BUFFER_SIZE 100
+
 #define WritePageToFile(file, page) 								\
 	int pageNum = file->GetLength()==0 ? 0 : file->GetLength()-1;	\
 	file->AddPage(page, pageNum); 									\
-	page->EmptyItOut(); 											\
-    
+	page->EmptyItOut();
 
 enum Target {Left, Right, Literal};
 enum CompOperator {LessThan, GreaterThan, Equals};

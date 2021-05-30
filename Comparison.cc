@@ -118,7 +118,6 @@ void OrderMaker :: Print () {
 }
 
 
-
 int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 
 	// initialize the size of the OrderMakers
@@ -141,10 +140,10 @@ int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 		}
 
 		// now verify that it operates over atts from both tables
-		// if (!((orList[i][0].operand1 == Left && orList[i][0].operand2 == Right) ||
-		//       (orList[i][0].operand2 == Left && orList[i][0].operand1 == Right))) {
-		// 	continue;		
-		// }
+		if (!((orList[i][0].operand1 == Left && orList[i][0].operand2 == Right) ||
+		      (orList[i][0].operand2 == Left && orList[i][0].operand1 == Right))) {
+			//continue;		
+		}
 
 		// since we are here, we have found a join attribute!!!
 		// so all we need to do is add the new comparison info into the
@@ -173,8 +172,8 @@ int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 		left.numAtts++;
 		right.numAtts++;
 	}
+	
 	return left.numAtts;
-
 }
 
 
@@ -194,6 +193,59 @@ void CNF :: Print () {
 		else
 			cout << "\n";
 	}
+}
+
+int CNF :: IndexOfAttr(int attr) {
+	for(int i=0;i<numAnds;i++) {
+		Comparison *obj = orList[i];
+		if(obj->op!=LessThan 
+			&& ((obj->whichAtt1 == attr && obj->operand2==Literal)
+			|| (obj->whichAtt2 == attr && obj->operand1==Literal))) {
+				return i;
+			}
+	}
+	return -1;
+}
+
+void OrderMaker :: GenerateQueryOrderMaker (CNF &cnf, OrderMaker &cnfOrder, OrderMaker &queryOrder) {
+	int index = -1;
+	// To check for existing attribute in cnf.
+	for(int i=0; i<numAtts; i++) {
+		index = cnf.IndexOfAttr(whichAtts[i]);
+		if(index < 0) {
+			return;
+		}
+		queryOrder.whichAtts[queryOrder.numAtts] = whichAtts[i];
+		queryOrder.whichTypes[queryOrder.numAtts] = whichTypes[i];
+		cnfOrder.whichAtts[cnfOrder.numAtts] = i;
+		cnfOrder.whichTypes[cnfOrder.numAtts] = whichTypes[i]; 
+		queryOrder.numAtts++;
+		cnfOrder.numAtts++;
+	}
+}
+
+std::ostream& operator<< (std::ostream &os, const OrderMaker &obj) {
+	os<<obj.numAtts<<endl;
+	for(int i=0;i<obj.numAtts;i++) {
+		os<<obj.whichAtts[i]<<" ";
+	}
+	for (int i=0;i<obj.numAtts;i++) {
+		os<<static_cast<int>(obj.whichTypes[i])<<" ";
+	}
+	return os;
+}
+
+std::istream& operator>> (std::istream &is, OrderMaker &obj) {
+	is>>obj.numAtts;
+	for(int i=0;i<obj.numAtts;i++) {
+		is>>obj.whichAtts[i];
+	}
+	for(int i=0;i<obj.numAtts;i++) {
+		int index;
+		is>>index;
+		obj.whichTypes[i]=static_cast<Type>(index);
+	}
+	return is;
 }
 
 // this is a helper routine that writes out another field for the literal record and its schema

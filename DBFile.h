@@ -1,30 +1,14 @@
 #ifndef DBFILE_H
 #define DBFILE_H
 
-#include "TwoWayList.h"
-#include "Record.h"
-#include "Schema.h"
-#include "File.h"
-#include "Comparison.h"
-#include "ComparisonEngine.h"
+#include "GenericDBFile.h"
 
-typedef enum {heap, sorted, tree} fType;
+typedef struct {OrderMaker *o; int l;} sortParams;
 
 class DBFile {
 
 private:
-	// A write buffer page
-	Page* bufferPage;
-	// The binary file.
-	File* heapFile;
-	// A read buffer page
-	Page* readBuffer;
-	// The page number in the read buffer
-	off_t curReadPage=0;
-	// Indicates any new writes.
-	bool dirtyBit = false;
-	// Method to write a page to the file.
-	void WriteToFile(Page *page);
+	GenericDBFile *dbFile;
 
 public:
 	DBFile (); 

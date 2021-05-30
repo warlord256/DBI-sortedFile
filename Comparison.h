@@ -1,6 +1,7 @@
 #ifndef COMPARISON_H
 #define COMPARISON_H
 
+#include <iostream>
 #include "Record.h"
 #include "Schema.h"
 #include "File.h"
@@ -36,6 +37,7 @@ public:
 
 
 class Schema;
+class CNF;
 
 // This structure encapsulates a sort order for records
 class OrderMaker {
@@ -50,6 +52,7 @@ class OrderMaker {
 
 public:
 	
+
 	// creates an empty OrdermMaker
 	OrderMaker();
 
@@ -59,6 +62,12 @@ public:
 
 	// print to the screen
 	void Print ();
+
+	void GenerateQueryOrderMaker (CNF &cnf, OrderMaker &cnfOrder, OrderMaker &queryOrder);
+
+	// For serialization
+	friend std::ostream& operator<< (std::ostream &os, const OrderMaker &obj);
+	friend std::istream& operator>> (std::istream &is, OrderMaker &obj); 
 };
 
 class Record;
@@ -97,6 +106,8 @@ public:
         // a relational selection over a single relation so only one schema is used
         void GrowFromParseTree (struct AndList *parseTree, Schema *mySchema, 
 		Record &literal);
+
+	int IndexOfAttr(int attr);
 
 };
 

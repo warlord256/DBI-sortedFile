@@ -32,11 +32,6 @@ int SplitToRuns(Pipe &in, int runLen, OrderMaker *order, File *file) {
 	int curRunSize = 0;
 	int runCount = 0;
 	vector<Record *> *records = new vector<Record *>();
-	// Open temporary file with random name.
-	string s;
-	generateRandomString(8, s);
-	s.append(".tmp");
-	file->Open(0, (char*)s.c_str());
 	Record *temp = new Record();
 	ComparisonEngine ce;
 	auto compareLambda = [&ce, &order] (Record *a, Record *b) {return ce.Compare(a, b, order)<0;};
@@ -157,6 +152,12 @@ void MergeRunsWithoutQueue(File *file, int runLen, int runCount, OrderMaker *ord
 void *TPMMS (void *params) {
 	threadParams *p = (threadParams *)params;
 	File *file = new File();
+	// Open temporary file with random name.
+	string s;
+	generateRandomString(8, s);
+	s.append(".tmp");
+	file->Open(0, (char*)s.c_str());
+	
 	// read data from in pipe sort them into runlen pages
 	int runCount = SplitToRuns(*p->inputPipe, p->runLen, p->order, file);
     // construct priority queue over sorted runs and dump sorted data into the out pipe
@@ -164,6 +165,9 @@ void *TPMMS (void *params) {
     // finally shut down the out pipe
 	p->outputPipe->ShutDown();
 	file->Close();
+	
+	// Delete the temporary file.
+	remove(s.c_str());
 	return NULL;
 }
 

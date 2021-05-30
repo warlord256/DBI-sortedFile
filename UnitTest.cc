@@ -7,8 +7,6 @@ TEST(DBFILE_TEST_SUIT, DBFILE_CREATE_TEST){
 
     DBFile db;
 
-    // Unimplemented, should return 0.
-    EXPECT_EQ(0, db.Create("abc.bin", sorted, NULL));
     // Regular call
     EXPECT_EQ(1, db.Create("test.bin", heap, NULL));
     // Should be able to overwrite existing file.
@@ -21,13 +19,13 @@ TEST(DBFILE_TEST_SUIT, DBFILE_OPEN_TEST){
     // Regular call.
     EXPECT_EQ(1, db.Open("test.bin"));
     // Open non existant file.
-    EXPECT_EXIT(db.Open("abc.bin"), ::testing::ExitedWithCode(1), "BAD!  Open did not work for abc.bin");
+    EXPECT_EXIT(db.Open("abc.bin"), ::testing::KilledBySignal(6), "Assertion `1==2' failed");
 }
 
 TEST(DBFILE_TEST_SUIT, DBFILE_CLOSE_TEST){
     DBFile db;
-    // Should always be successfull.
-    EXPECT_EQ(1, db.Close());
+    // Fails if Open is not called.
+    EXPECT_EQ(0, db.Close());
 }
 
 TEST(DBFILE_TEST_SUIT, DBFILE_INTEGRATED_TEST){
@@ -35,9 +33,6 @@ TEST(DBFILE_TEST_SUIT, DBFILE_INTEGRATED_TEST){
     //Integration tests may look like a combination of above tests, but this may change in the future.
     EXPECT_EQ(1, db.Create("test.bin", heap, NULL));
     EXPECT_EQ(1, db.Open("test.bin"));
-    EXPECT_EXIT(db.Open("abc.bin"), ::testing::ExitedWithCode(1), "BAD!  Open did not work for abc.bin");
-    EXPECT_EXIT(db.Open(NULL), ::testing::ExitedWithCode(1), "BAD!  Open did not work for ");
-    EXPECT_EQ(1, db.Close());
     EXPECT_EQ(1, db.Close());
     
     // !!!!!! Will be used for further tests. !!!!!!!!!
@@ -48,7 +43,7 @@ TEST(DBFILE_TEST_SUIT, DBFILE_INTEGRATED_TEST){
 	sprintf (tbl_path, "%s%s.tbl", tpch_dir, n->name()); 
 	cout << " tpch file will be loaded from " << tbl_path << endl;
     db.Load(*(n->schema()), tbl_path);
-    db.Close();
+    ASSERT_EQ(1, db.Close());
 
 }
 
@@ -81,7 +76,6 @@ TEST(BIGQ_TEST_SUIT, BIGQ_INTEGRATION_TEST) {
     
     // Call split to runs.
     EXPECT_EQ(1,SplitToRuns(input, 1, order, tempFile));
-    
     MergeRuns(tempFile, 1, 1, order, output);
     output.ShutDown();
     vector<Record *> rec;
@@ -93,3 +87,66 @@ TEST(BIGQ_TEST_SUIT, BIGQ_INTEGRATION_TEST) {
     ASSERT_EQ(rec.size(), count);
     tempFile->Close();
 }
+
+TEST(SORTED_DBFILE_TEST_SUIT, DBFILE_CREATE_TEST){
+
+    DBFile db;
+    OrderMaker *o = new OrderMaker(n->schema());
+
+    struct {OrderMaker *o; int l;} startup = {o, 3};
+
+    // Regular call
+    EXPECT_EQ(1, db.Create("test.bin", sorted, &startup));
+    // Without startup struct
+    EXPECT_EXIT(db.Create("abc.bin", sorted, NULL), ::testing::KilledBySignal(6), "Assertion `1==2' failed");
+}
+
+TEST(SORTED_DBFILE_TEST_SUIT, DBFILE_OPEN_TEST){
+
+    DBFile db;
+    OrderMaker *o = new OrderMaker(n->schema());
+
+    struct {OrderMaker *o; int l;} startup = {o, 3};
+
+    // Regular call
+    EXPECT_EQ(1, db.Open("test.bin"));
+    // Non existant file
+    EXPECT_EXIT(db.Open("abc.bin"), ::testing::KilledBySignal(6), "Assertion `1==2' failed");
+}
+
+TEST(SORTED_DBFILE_TEST_SUIT, DBFILE_INTEGRATION_TEST) {
+    DBFile db;
+    ASSERT_EQ(1, db.Open("test.bin"));
+
+    char tbl_path[100]; // construct path of the tpch flat text file
+	sprintf (tbl_path, "%s%s.tbl", tpch_dir, n->name()); 
+	cout << " tpch file will be loaded from " << tbl_path << endl;
+    db.Load(*(n->schema()), tbl_path);
+    ASSERT_EQ(1, db.Close());
+
+    ASSERT_EQ(1, db.Open("test.bin"));
+    db.MoveFirst();
+    ComparisonEngine ce;
+    OrderMaker *o = new OrderMaker(n->schema());
+    int i = 0;
+    int err = 0;
+    Record rec[2];
+	Record *last = NULL, *prev = NULL;
+
+	while (db.GetNext(rec[i%2])) {
+		prev = last;
+		last = &rec[i%2];
+
+		if (prev && last) {
+			if (ce.Compare (prev, last, o) == 1) {
+				err++;
+			}
+		}
+		i++;
+	}
+
+    ASSERT_EQ(0, err);
+    db.Close();
+
+}
+
