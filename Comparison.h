@@ -38,12 +38,14 @@ public:
 
 class Schema;
 class CNF;
+struct Attribute;
 
 // This structure encapsulates a sort order for records
 class OrderMaker {
 
 	friend class ComparisonEngine;
 	friend class CNF;
+	friend class Record;
 
 	int numAtts;
 
@@ -59,6 +61,10 @@ public:
 	// create an OrderMaker that can be used to sort records
 	// based upon ALL of their attributes
 	OrderMaker(Schema *schema);
+
+	// Create an Ordermaker that can be used to sort records 
+	// based upon the attributes passed to this method.
+	OrderMaker(Schema *schema, int numOfAttsToAdd, Attribute *attsToAdd);
 
 	// print to the screen
 	void Print ();

@@ -1,16 +1,5 @@
 #include "BigQ.h"
 
-void generateRandomString(int size, string &s) {
-    srand(time(NULL)); // seed with time
-	static const string str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	
-    size = (rand() % size) + 1; // this randomises the size
-
-    while(--size > -1)
-        s += str[(rand() % str.length())]; // generate a string ranging from the space character to ~ (tilde)
-
-}
-
 // Writes the sorted run into the file.
 void WriteRunToFile(vector<Record *> &records, File *file) {
 	Page *buffer = new Page();

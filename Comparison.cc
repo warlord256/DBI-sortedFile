@@ -102,6 +102,24 @@ OrderMaker :: OrderMaker(Schema *schema) {
         }
 }
 
+OrderMaker :: OrderMaker(Schema *schema, int numOfAttsToAdd, Attribute *attsToAdd) {
+	numAtts = 0;
+
+	int n = schema->GetNumAtts();
+	Attribute *atts = schema->GetAtts();
+
+	for(int j = 0;j<numOfAttsToAdd; j++) {
+		for (int i = 0; i < n; i++) {
+			if (strcmp(atts[i].name, attsToAdd[j].name)==0) {
+				whichAtts[numAtts] = i;
+				whichTypes[numAtts] = attsToAdd[j].myType;
+				numAtts++;
+				break;
+			}
+		}
+	}
+	
+}
 
 void OrderMaker :: Print () {
 	printf("NumAtts = %5d\n", numAtts);
@@ -142,7 +160,7 @@ int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 		// now verify that it operates over atts from both tables
 		if (!((orList[i][0].operand1 == Left && orList[i][0].operand2 == Right) ||
 		      (orList[i][0].operand2 == Left && orList[i][0].operand1 == Right))) {
-			//continue;		
+			continue;		
 		}
 
 		// since we are here, we have found a join attribute!!!
@@ -665,5 +683,3 @@ void CNF :: GrowFromParseTree (struct AndList *parseTree, Schema *mySchema,
 	remove("sdafdsfFFDSDA");
 	remove("hkljdfgkSDFSDF");
 }
-
-

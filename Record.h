@@ -8,7 +8,6 @@
 
 #include "Defs.h"
 #include "ParseTree.h"
-#include "Record.h"
 #include "Schema.h"
 #include "File.h"
 #include "Comparison.h"
@@ -28,12 +27,15 @@ friend class ComparisonEngine;
 friend class Page;
 
 private:
-	char *bits;
 	char* GetBits ();
 	void SetBits (char *bits);
 	void CopyBits(char *bits, int b_len);
+	int NumberOfAtts() {
+		return ((int *)bits)[1]/sizeof(int)-1;
+	}
 
 public:
+	char *bits;
 	Record ();
 	~Record();
 
@@ -51,6 +53,12 @@ public:
 	// if there is an error and returns a 1 otherwise
 	int SuckNextRecord (Schema *mySchema, FILE *textFile);
 
+	int ComposeRecord (Schema *mySchema, const char *src);
+	
+	int ComposeRecord (Type type, int& intRes, double& doubleRes);
+
+	// template <class T> void ComposeRecord (const T& val);
+
 	// this projects away various attributes... 
 	// the array attsToKeep should be sorted, and lists all of the attributes
 	// that should still be in the record after Project is called.  numAttsNow
@@ -59,14 +67,25 @@ public:
 
 	// takes two input records and creates a new record by concatenating them;
 	// this is useful for a join operation
+	// attsToKeep[] = {0, 1, 2, 0, 2, 4} --gets 0,1,2 records from left 0, 2, 4 recs from right and startOfRight=3
+	// startOfRight is the index position in attsToKeep for the first att from right rec
 	void MergeRecords (Record *left, Record *right, int numAttsLeft, 
 		int numAttsRight, int *attsToKeep, int numAttsToKeep, int startOfRight);
+
+	// Same as above but with all attributes, cross product.
+	void MergeRecords(Record *left, Record *right);
+
+	// Kind of merge but with a project on left.
+	void ComposeGroupedRecord(Record *left, Record *right, OrderMaker *order);
 
 	// prints the contents of the record; this requires
 	// that the schema also be given so that the record can be interpreted
 	void Print (Schema *mySchema);
 
-	int Size();
+	size_t Size();
+
+	void WriteToFile (FILE *file, Schema *schema);
+
 };
 
 #endif

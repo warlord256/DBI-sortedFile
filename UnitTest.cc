@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "DBFile.h"
 #include "BigQ.h"
+#include "RelOp.h"
 #include "test.h"
 
 TEST(DBFILE_TEST_SUIT, DBFILE_CREATE_TEST){
@@ -150,3 +151,91 @@ TEST(SORTED_DBFILE_TEST_SUIT, DBFILE_INTEGRATION_TEST) {
 
 }
 
+TEST(RELOP_TEST_SUIT, SF_TEST) {
+    DBFile db;
+    ASSERT_EQ(1, db.Open("test.bin"));
+    Pipe p(1);
+    SelectFile sf;
+    CNF cnf;
+    Record lit, r;
+    ComparisonEngine ce;
+    sf.Use_n_Pages(10);
+    get_cnf("(n_nationkey > 20)", n->schema(), cnf, lit);
+    sf.Run(db, p, cnf, lit);
+    while(p.Remove(&r)) {
+        ASSERT_EQ(1, ce.Compare(&r, &lit, &cnf)); 
+    }
+    sf.WaitUntilDone();
+}
+
+TEST(RELOP_TEST_SUIT, SUM_TEST) {
+    DBFile db;
+    ASSERT_EQ(1, db.Open("test.bin"));
+    Pipe in(10), out(1);
+    Sum S;
+    Function func;
+    get_cnf("(n_nationkey)", n->schema(), func);
+    Record r;
+    S.Run(in, out, func);
+    db.MoveFirst();
+    int sum = 0;
+    int count = 0;
+    while(db.GetNext(r)) {
+        sum += count++;
+        in.Insert(&r);
+    }
+    in.ShutDown();
+    ASSERT_EQ(1, out.Remove(&r));
+    int res = ((int *)(r.bits))[2];
+    ASSERT_EQ(sum, res);
+    S.WaitUntilDone();
+}
+
+TEST(RELOP_TEST_SUIT, DUPLICATE_TEST) {
+    DBFile db;
+    ASSERT_EQ(1, db.Open("test.bin"));
+    Pipe in(10), out(1);
+    DuplicateRemoval dp;
+    Record r;
+    dp.Run(in, out, *n->schema());
+    db.MoveFirst();
+    int count = 0;
+    while(db.GetNext(r)) {
+        count++;
+        in.Insert(&r);
+    }
+    in.ShutDown();
+    while(out.Remove(&r)) {
+        count--;
+    }
+    ASSERT_EQ(0, count);
+    dp.WaitUntilDone();
+}
+
+TEST(RELOP_TEST_SUIT, GROUPBY_TEST) {
+    DBFile db;
+    ASSERT_EQ(1, db.Open("test.bin"));
+    
+    GroupBy G;
+    Pipe in(10), out (1);
+    Function func;
+    Attribute *n_regionkey = new Attribute{"n_regionkey", Int};
+    // Attribute atts[] = {s_regionkey};
+    char *str_sum = "(1)";
+    get_cnf (str_sum, n->schema(), func);
+    OrderMaker grp_order (n->schema(), 1, n_regionkey);
+	G.Use_n_Pages (1);
+    G.Run(in, out, grp_order, func);
+    Record r;
+    db.MoveFirst();
+    while(db.GetNext(r)) {
+        in.Insert(&r);
+    }
+    in.ShutDown();
+    int count = 0;
+    while(out.Remove(&r)) {
+        count++;
+    }
+    ASSERT_EQ(5, count);
+    G.WaitUntilDone();
+}
