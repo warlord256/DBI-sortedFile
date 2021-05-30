@@ -2,6 +2,7 @@
 #define STATISTICS_
 #include "ParseTree.h"
 #include <unordered_map>
+#include <set>
 #include <string>
 using namespace std;
 
@@ -34,7 +35,11 @@ public:
 
 	void  Apply(struct AndList *parseTree, char *relNames[], int numToJoin);
 	double Estimate(struct AndList *parseTree, char **relNames, int numToJoin);
+	bool ShouldSwap(string left, string right);
 
+	// Returns true if the all tables belong to the same set in the statistic object.
+	bool AreTablesJoined(set<string> tables);
+	void GetRelNamesForJoin(char* relNames[], string *relNames_s);
 };
 
 #endif

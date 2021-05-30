@@ -3,7 +3,65 @@
 // #include "BigQ.h"
 // #include "RelOp.h"
 // #include "test.h"
-#include "Statistics.h"
+// #include "Statistics.h"
+// #include "QueryPlan.h"
+#include "QueryOptimizer.h"
+
+extern struct FuncOperator *finalFunction; // the aggregate function (NULL if no agg)
+extern struct TableList *tables; // the list of tables and aliases in the query
+extern struct AndList *boolean; // the predicate in the WHERE clause
+extern struct NameList *groupingAtts; // grouping atts (NULL if no grouping)
+extern struct NameList *attsToSelect; // the set of attributes in the SELECT (NULL if no such atts)
+extern int distinctAtts; // 1 if there is a DISTINCT in a non-aggregate query 
+extern int distinctFunc;  // 1 if there is a DISTINCT in an aggregate query
+
+extern "C" struct YY_BUFFER_STATE *yy_scan_string(const char*);
+extern "C" int yyparse(void);
+
+TEST(OPTIMIZER_TEST, OPTIMIZE){
+    QueryOptimizer qo;
+    QueryPlan qp;
+    EXPECT_DEATH(qo.Optimize(qp), "");
+    yy_scan_string("SELECT SUM DISTINCT (n.n_nationkey + r.r_regionkey) FROM nation AS n, region AS r, customer AS c WHERE (n.n_regionkey = r.r_regionkey) AND (n.n_nationkey = c.c_nationkey) AND (n.n_nationkey > 10) GROUP BY r.r_regionkey");
+    yyparse();
+    EXPECT_NO_FATAL_FAILURE(qo.Optimize(qp));
+}
+
+TEST(QUERY_PLAN_TEST, ASSIGN_PIPES){
+    // QueryOptimizer qo;
+    QueryPlan qp;
+    // EXPECT_NO_FATAL_FAILURE(qo.Optimize(qp));
+    EXPECT_EQ(NULL, qp.root);
+    EXPECT_DEATH(qp.AssignPipes(NULL),"");
+    Node *n1 = new Node(SELECT_FILE), *n2 = new Node(SELECT_FILE), *j = new Node(JOIN);
+    j->leftChild = n1;
+    j->rightChild = n2;
+    qp.root = j;
+    EXPECT_NO_FATAL_FAILURE(qp.AssignPipes(j));
+    EXPECT_EQ(0, n1->outPipe);
+    EXPECT_EQ(1, n2->outPipe);
+    EXPECT_EQ(0, j->lPipe);
+    EXPECT_EQ(1, j->rPipe);
+    EXPECT_EQ(2, j->outPipe);
+}
+
+TEST(OPTIMIZER_TEST, COMPLETE){
+    QueryOptimizer qo;
+    QueryPlan qp;
+    EXPECT_DEATH(qo.Optimize(qp), "");
+    yy_scan_string("SELECT SUM DISTINCT (n.n_nationkey + r.r_regionkey) FROM nation AS n, region AS r, customer AS c WHERE (n.n_regionkey = r.r_regionkey) AND (n.n_nationkey = c.c_nationkey) AND (n.n_nationkey > 10) GROUP BY r.r_regionkey");
+    yyparse();
+    EXPECT_NO_FATAL_FAILURE(qo.Optimize(qp));
+    EXPECT_NO_FATAL_FAILURE(qp.AssignPipes(qp.root));
+    EXPECT_EQ(7, qp.pipeCount);
+}
+
+/**
+ * The test cases for statistics class requires another lexer to parse the cnf directly without user input.
+ * IF required make sure the lparsers are also included to run these.
+ * 
+ **/
+/*
 extern "C" struct YY_BUFFER_STATE *yy_scan_string(const char*);
 extern "C" int yyparse(void);
 extern struct AndList *final;
@@ -103,6 +161,7 @@ TEST(STATISTICS_TEST_SUIT, STATISTICS_NORMAL_FLOW){
 	yyparse();
     EXPECT_NEAR(266666, s.Estimate(final, relName, 2), 1);
 }
+*/
 
 
 /* 

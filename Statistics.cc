@@ -56,7 +56,7 @@ void Statistics::CopyRel(char *oldName, char *newName)
     string newName_s(newName);
     AddRel(newName, setToStats[relToSet[oldName_s]].noOfTuples);
     setToStats[relToSet[newName_s]].attrMap = setToStats[relToSet[oldName_s]].attrMap;
-    for(auto i : setToStats[relToSet[newName_s]].attrMap) {
+    for(auto i : setToStats[relToSet[oldName_s]].attrMap) {
         string attrName = newName_s + '.' +i.first;
         attrToSet[attrName] = relToSet[newName_s];
     }
@@ -87,7 +87,7 @@ void Statistics::Read(char *fromWhere)
 
     // The very detailed read supporting non singleton sets.
     if(getline(in, line)) {
-        in>>relCount;
+        relCount = stoi(line);
     }
 
     // Fill rel to set
@@ -99,8 +99,7 @@ void Statistics::Read(char *fromWhere)
         istringstream stream(line);
         string str;
         int num;
-        stream>>str;
-        stream>>num;
+        stream>>num>>str;
         relToSet[str] = num;
     }
 
@@ -208,9 +207,6 @@ bool Statistics::IsValidJoin(char *relNames[], int numToJoin) {
 }
 
 void  Statistics::Apply(struct AndList *parseTree, char *relNames[], int numToJoin) {
-    if(numToJoin <= 1) {
-        return;
-    }
 
     FATALIF(!IsValidJoin(relNames, numToJoin), "The join requested is not a valid join.");
 
@@ -431,3 +427,37 @@ double Statistics::Estimate(struct AndList *parseTree, char **relNames, int numT
     return res;
 }
 
+bool Statistics::AreTablesJoined(set<string> tables) {
+    if(!tables.size()) {
+        return true;
+    }
+    int checkingSet = relToSet[*tables.begin()];
+    for(auto i : tables) {
+        if(relToSet[i]!=checkingSet) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Statistics::GetRelNamesForJoin(char* relNames[], string *relNames_s) {
+    string *left = &relNames_s[0], *right = &relNames_s[1];
+    int lSet = relToSet[*left];
+    int rSet = relToSet[*right];
+    relNames[0] = (char*)(*left).c_str();
+    relNames[1] = (char*)(*right).c_str();
+    int index = 2;
+    for(auto i : relToSet) {
+        if(i.first != *left && i.first != *right) {
+            if(i.second==lSet || i.second==rSet) {
+                relNames_s[index] = i.first;
+                relNames[index] = (char*)relNames_s[index].c_str();
+                index++;
+            }
+        }
+    }
+}
+
+bool Statistics :: ShouldSwap(string left, string right) {
+    return setToStats[relToSet[left]].noOfTuples < setToStats[relToSet[right]].noOfTuples;
+}

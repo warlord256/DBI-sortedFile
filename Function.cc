@@ -201,7 +201,16 @@ void Function :: GrowFromParseTree (struct FuncOperator *parseTree, Schema &mySc
 }
 
 void Function :: Print () {
-
+	string op_s[] = {"PushInt", "PushDouble", "ToDouble", "ToDouble2Down", 
+	"IntUnaryMinus", "IntMinus", "IntPlus", "IntDivide", "IntMultiply",
+	"DblUnaryMinus", "DblMinus", "DblPlus", "DblDivide", "DblMultiply"};
+	for(int i=0;i<numOps;i++) {
+		cout << "\tOp: "<< op_s[opList[i].myOp] << ", Attr Index : " << opList[i].recInput << ", ";
+		if(opList[i].litInput != NULL) {
+			cout << "Literal val index: "<< *((double*)opList[i].litInput);
+		}
+		cout << endl;
+	}
 }
 
 Type Function :: Apply (Record &toMe, int &intResult, double &doubleResult) {

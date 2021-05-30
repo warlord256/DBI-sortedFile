@@ -36,9 +36,34 @@ Attribute *Schema :: GetAtts () {
 	return myAtts;
 }
 
+Schema :: Schema (Schema *copyFrom, const char* alias) {
+	numAtts = copyFrom->numAtts;
+	myAtts = new Attribute[numAtts];
+	for(int i=0;i<numAtts;i++) {
+		myAtts[i].myType = copyFrom->myAtts[i].myType;
+		string s= string(alias) + "." + string(copyFrom->myAtts[i].name);
+		myAtts[i].name = strdup(s.c_str());
+	}	
+}
 
-Schema :: Schema (char *fpath, int num_atts, Attribute *atts) {
-	fileName = strdup (fpath);
+Schema :: Schema (Schema *left, Schema *right) {
+	numAtts = left->numAtts + right->numAtts;
+	myAtts = new Attribute[numAtts];
+	// Copy from left.
+	for(int i=0;i<left->numAtts;i++) {
+		myAtts[i].myType = left->myAtts[i].myType;
+		myAtts[i].name = strdup(left->myAtts[i].name);
+	}
+	//Copy from right.
+	for(int i=0;i<right->numAtts;i++) {
+		int idx = left->numAtts+i;
+		myAtts[idx].myType = right->myAtts[i].myType;
+		myAtts[idx].name = strdup(right->myAtts[i].name);
+	}
+}
+
+Schema :: Schema (int num_atts, Attribute *atts) {
+	// fileName = strdup (fpath);
 	numAtts = num_atts;
 	myAtts = new Attribute[numAtts];
 	for (int i = 0; i < numAtts; i++ ) {

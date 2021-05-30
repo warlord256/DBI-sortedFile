@@ -51,7 +51,13 @@ public:
 	Schema (char *fName, char *relName);
 
 	// this composes a schema instance in-memory
-	Schema (char *fName, int num_atts, Attribute *atts);
+	Schema (int num_atts, Attribute *atts);
+
+	// This composes a schema of a relation with an alias appended.
+	Schema (Schema *copyFrom, const char* alias);
+
+	// This composes a schema as a combination of the 2 input schemas used for generating a join schema.
+	Schema (Schema *left, Schema *right);
 
 	// this constructs a sort order structure that can be used to
 	// place a lexicographic ordering on the records using this type of schema

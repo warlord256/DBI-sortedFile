@@ -354,8 +354,8 @@ void* groupThread(void* params) {
 		while(sortedIn->Remove(&r)) {
 			if(ce.Compare(&prev, &r, order)) {
 				// Create the new record with all elemnts in the OrderMaker and the sum.
-				res.ComposeRecord(type, intSum, doubleSum);
-				// mergedRecord.ComposeGroupedRecord(&prev, &res, order);
+				// res.ComposeRecord(type, intSum, doubleSum);
+				mergedRecord.ComposeGroupedRecord(&prev, &res, order);
 				out->Insert(&res);
 				prev.Consume(&r);
 
@@ -371,8 +371,8 @@ void* groupThread(void* params) {
 			}
 		}
 		// Determine type and push final record.
-		res.ComposeRecord(type, intSum, doubleSum);
-		// mergedRecord.ComposeGroupedRecord(&prev, &res, order);
+		// res.ComposeRecord(type, intSum, doubleSum);
+		mergedRecord.ComposeGroupedRecord(&prev, &res, order);
 		out->Insert(&res);
 
 		// End thread
